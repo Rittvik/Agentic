@@ -11,7 +11,7 @@ def get_llm():
     if settings.DEFAULT_PROVIDER == "gemini" and settings.GEMINI_API_KEY:
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             google_api_key=settings.GEMINI_API_KEY,
             temperature=0.1
         )
