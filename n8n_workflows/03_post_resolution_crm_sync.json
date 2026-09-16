@@ -1,0 +1,53 @@
+{
+    "name": "03 - Post-Resolution CRM Sync & Notification",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "ticket-resolved",
+                "options": {}
+            },
+            "name": "Resolution Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "omni-ticket-resolved"
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "audit_log",
+                            "value": "=✅ Ticket [{{ $json.body.ticket_id }}] resolved successfully. Summary: {{ $json.body.summary }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Format CRM Record",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 2,
+            "position": [
+                480,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Resolution Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Format CRM Record",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

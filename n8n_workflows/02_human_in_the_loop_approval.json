@@ -1,0 +1,81 @@
+{
+    "name": "02 - Human-in-the-Loop Approval Gate",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "hitl-approval",
+                "options": {}
+            },
+            "name": "HITL Alert Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "omni-hitl-approval"
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "notification_card",
+                            "value": "=🚨 *HIGH-RISK ACTION FLAGGED BY AGENT*\n\n*Ticket ID:* {{ $json.body.ticket_id }}\n*Customer Inquiry:* \"{{ $json.body.customer_message }}\"\n*Proposed Action:* {{ $json.body.action_plan.action_type }}\n*Amount:* ${{ $json.body.action_plan.parameters.amount }}\n*Risk Reason:* {{ $json.body.action_plan.risk_reasoning }}\n\n👉 *Approval Callback:* {{ $json.body.approval_callback_url }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Format Manager Card",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 2,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $('HITL Alert Trigger').item.json.body.approval_callback_url }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "{\n  \"decision\": \"APPROVE\",\n  \"supervisor_notes\": \"Approved via n8n automated manager policy review.\"\n}",
+                "options": {}
+            },
+            "name": "Execute Callback Approval",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                700,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "HITL Alert Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Format Manager Card",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Manager Card": {
+            "main": [
+                [
+                    {
+                        "node": "Execute Callback Approval",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

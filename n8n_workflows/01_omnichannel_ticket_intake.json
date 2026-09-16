@@ -1,0 +1,75 @@
+{
+    "name": "01 - Omnichannel Ticket Intake",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "ticket-intake",
+                "options": {}
+            },
+            "name": "Webhook Intake",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "omni-ticket-intake"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:8000/api/chat",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"message\": \"{{ $json.body.message }}\",\n  \"order_id\": \"{{ $json.body.order_id }}\",\n  \"image_url\": \"{{ $json.body.image_url }}\"\n}",
+                "options": {}
+            },
+            "name": "Dispatch to Agentic Graph",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"status\": \"SUCCESS\",\n  \"ticket_id\": \"{{ $json.ticket_id }}\",\n  \"agent_status\": \"{{ $json.status }}\",\n  \"response\": \"{{ $json.response }}\"\n}",
+                "options": {}
+            },
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                700,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Intake": {
+            "main": [
+                [
+                    {
+                        "node": "Dispatch to Agentic Graph",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Dispatch to Agentic Graph": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
