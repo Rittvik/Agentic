@@ -1,17 +1,17 @@
 import uuid
+import os
 from typing import Dict, Any, Optional, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-
 from backend.agents.graph import omni_agent_graph
 from backend.core.state import OmniResolveState, TicketStatus
 from backend.database.db import get_connection, init_db
 from backend.tools.db_tools import update_shipping_address, process_refund
 from backend.tools.n8n_tools import dispatch_resolution_to_n8n
-
 app = FastAPI(title="OmniResolve Agentic Operations API", version="1.0.0")
-
 # Enable CORS for frontend dashboard
 app.add_middleware(
     CORSMiddleware,
@@ -20,10 +20,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+# Mount static frontend files & root index
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+@app.get("/")
+async def serve_index():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 # In-memory session store for live tickets
 TICKETS_DB: Dict[str, OmniResolveState] = {}
-
 # Ensure database is initialized on startup
 @app.on_event("startup")
 def on_startup():

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniResolve | Autonomous Agentic Operations Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Header -->
+        <header class="navbar">
+            <div class="brand">
+                <div class="brand-badge">⚡ AGENTIC OPS</div>
+                <h1>OmniResolve</h1>
+                <span class="version-tag">v1.0 • LangGraph + n8n</span>
+            </div>
+            <div class="system-status">
+                <div class="status-indicator online">
+                    <span class="dot"></span>
+                    <span>FastAPI :8000 (Connected)</span>
+                </div>
+                <div class="status-indicator n8n">
+                    <span class="dot"></span>
+                    <span>n8n :5678 (Active)</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('customer-tab')">💬 Customer Support Portal</button>
+            <button class="tab-btn" onclick="switchTab('ops-tab')">🛡️ Ops Command Center & HITL Queue <span
+                    id="pending-badge" class="badge-count">0</span></button>
+            <button class="tab-btn" onclick="switchTab('db-tab')">📊 Live Database Inspector</button>
+            <button class="tab-btn" onclick="switchTab('scenarios-tab')">⚡ 1-Click Scenarios</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="content-area">
+            <!-- TAB 1: Customer Portal -->
+            <section id="customer-tab" class="tab-content active">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-title">
+                            <h3>OmniResolve Autonomous Support Agent</h3>
+                            <p>Powered by LangGraph multi-agent squad & policy guardrails</p>
+                        </div>
+                        <button class="btn-secondary" onclick="resetChat()">Clear Chat</button>
+                    </div>
+
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message bot">
+                            <div class="avatar">🤖</div>
+                            <div class="bubble">
+                                Hello! I am OmniResolve, an autonomous operations agent. You can ask me to track your
+                                orders, change delivery addresses, or handle refund/damage claims. How can I help you
+                                today?
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-area">
+                        <div class="input-controls">
+                            <input type="text" id="order-id-input" placeholder="Order ID (e.g. ORD-901)"
+                                class="small-input">
+                            <input type="text" id="image-url-input" placeholder="Image URL (Optional damage photo)"
+                                class="small-input">
+                        </div>
+                        <form onsubmit="handleCustomerSubmit(event)" class="message-form">
+                            <input type="text" id="user-input"
+                                placeholder="Type your inquiry (e.g., 'Change my shipping address for ORD-902 to Austin, TX')..."
+                                required>
+                            <button type="submit" class="btn-primary" id="send-btn">Send Query ➔</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: Ops Command Center & Reasoning Inspector -->
+            <section id="ops-tab" class="tab-content">
+                <div class="ops-grid">
+                    <!-- Pending HITL Approvals Queue -->
+                    <div class="ops-card">
+                        <div class="card-header">
+                            <h3>🚨 Pending Human Approvals (HITL Queue)</h3>
+                            <button class="btn-secondary small" onclick="loadTickets()">Refresh</button>
+                        </div>
+                        <div id="hitl-queue" class="queue-list">
+                            <p class="empty-state">No pending manager approvals. High-risk actions (> $50 refund or
+                                address conflicts) will appear here.</p>
+                        </div>
+                    </div>
+
+                    <!-- Live Multi-Agent Reasoning Graph & Trace -->
+                    <div class="ops-card">
+                        <div class="card-header">
+                            <h3>🧠 Live Agent Reasoning Trace</h3>
+                            <span id="active-ticket-id" class="ticket-pill">No Active Ticket</span>
+                        </div>
+                        <div id="reasoning-trace" class="trace-feed">
+                            <p class="empty-state">Run a query from the Customer Portal or Scenarios tab to observe
+                                real-time agent thoughts and tool calls.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: Database Inspector -->
+            <section id="db-tab" class="tab-content">
+                <div class="db-grid">
+                    <div class="ops-card">
+                        <div class="card-header">
+                            <h3>📦 Orders Table (`orders`)</h3>
+                            <button class="btn-secondary small" onclick="loadDatabase()">Refresh DB</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="orders-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Item</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Shipping Address</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="ops-card">
+                        <div class="card-header">
+                            <h3>💳 Audit Transactions Table (`transactions`)</h3>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="txns-table">
+                                <thead>
+                                    <tr>
+                                        <th>Txn ID</th>
+                                        <th>Order</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: 1-Click Scenario Runner -->
+            <section id="scenarios-tab" class="tab-content">
+                <div class="scenarios-grid">
+                    <div class="scenario-card" onclick="runScenario('address_processing')">
+                        <div class="scenario-icon">🚚</div>
+                        <h4>Scenario 1: Low-Risk Address Update</h4>
+                        <p>Order <code>ORD-902</code> is in <code>PROCESSING</code> status. The agent validates status
+                            and autonomously modifies shipping address in DB.</p>
+                        <div class="scenario-meta"><span class="tag low">Autonomous: LOW Risk</span></div>
+                    </div>
+
+                    <div class="scenario-card" onclick="runScenario('refund_hitl')">
+                        <div class="scenario-icon">💰</div>
+                        <h4>Scenario 2: High-Value Refund ($349.99)</h4>
+                        <p>Customer reports damaged Sony headphones on <code>ORD-901</code> with photo. Exceeds $50
+                            limit $\rightarrow$ Triggers HITL approval in n8n.</p>
+                        <div class="scenario-meta"><span class="tag high">Triggers HITL: HIGH Risk</span></div>
+                    </div>
+
+                    <div class="scenario-card" onclick="runScenario('address_shipped_block')">
+                        <div class="scenario-icon">🛑</div>
+                        <h4>Scenario 3: Policy Violation (Shipped Order)</h4>
+                        <p>Customer attempts address change on <code>ORD-903</code> which is already
+                            <code>SHIPPED</code>. Guardrail agent halts modification.</p>
+                        <div class="scenario-meta"><span class="tag high">Policy Block</span></div>
+                    </div>
+
+                    <div class="scenario-card" onclick="runScenario('order_tracking')">
+                        <div class="scenario-icon">📍</div>
+                        <h4>Scenario 4: Instant Order Tracking</h4>
+                        <p>Customer requests tracking for <code>ORD-901</code>. Logistics Agent queries SQLite and
+                            returns carrier status.</p>
+                        <div class="scenario-meta"><span class="tag low">Autonomous: LOW Risk</span></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>
